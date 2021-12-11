@@ -5,11 +5,20 @@
     {
       "type": "object",
       "required": [
-        "increment"
+        "get_token1for2"
       ],
       "properties": {
-        "increment": {
-          "type": "object"
+        "get_token1for2": {
+          "type": "object",
+          "required": [
+            "token1"
+          ],
+          "properties": {
+            "token1": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -17,16 +26,16 @@
     {
       "type": "object",
       "required": [
-        "reset"
+        "get_token2for1"
       ],
       "properties": {
-        "reset": {
+        "get_token2for1": {
           "type": "object",
           "required": [
-            "count"
+            "token2"
           ],
           "properties": {
-            "count": {
+            "token2": {
               "type": "integer",
               "format": "int32"
             }
