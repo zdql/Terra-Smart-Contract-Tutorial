@@ -10,7 +10,7 @@ use crate::msg::{PoolResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{State, STATE};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:rockpaperscissorsrust";
+const CONTRACT_NAME: &str = "crates.io:exchangepool";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -43,27 +43,27 @@ pub fn instantiate(
 pub fn execute(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::GetToken1for2 {token1} => Get_Token1for2(deps, token1),
-        ExecuteMsg::GetToken2for1 {token2} => Get_Token2for1(deps, token2),
+        ExecuteMsg::GetToken1for2 {token1} => get_token1for2(deps, token1),
+        ExecuteMsg::GetToken2for1 {token2} => get_token2for1(deps, token2),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn Get_Token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
+pub fn get_token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
 
-        let exchangeRate = 1;
-        let poolAmount = amount;
-        let returnAmount = poolAmount * exchangeRate;
+        let exchange_rate = 1;
+        let pool_amount = amount;
+        let return_amount = pool_amount * exchange_rate;
         STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-        if returnAmount > state.amount2 {
+        if return_amount > state.amount2 {
             return Err(ContractError::Unauthorized {})
         }  
         state.amount1 += amount;
-        state.amount2 = state.amount2 - returnAmount;
+        state.amount2 = state.amount2 - return_amount;
         Ok(state)
     })?;
 
@@ -71,16 +71,16 @@ pub fn Get_Token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn Get_Token2for1(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
-        let exchangeRate = 1;
-        let poolAmount = amount;
-        let returnAmount = poolAmount * exchangeRate;
+pub fn get_token2for1(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
+        let exchange_rate = 1;
+        let pool_amount = amount;
+        let return_amount = pool_amount * exchange_rate;
         STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
-            if returnAmount > state.amount1 {
+            if return_amount > state.amount1 {
                 return Err(ContractError::Unauthorized {})
             };
             state.amount2 += amount;
-            state.amount1 = state.amount1 - returnAmount;
+            state.amount1 = state.amount1 - return_amount;
             Ok(state)
         })?;
         Ok(Response::new().add_attribute("method", "GetToken2for1"))
@@ -90,12 +90,12 @@ pub fn Get_Token2for1(deps: DepsMut, amount: i32) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetPool {} => to_binary(&getPool(deps)?),
+        QueryMsg::GetPool {} => to_binary(&get_pool(deps)?),
     }
 }
 
  #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn getPool(deps: Deps) -> StdResult<PoolResponse> {
+pub fn get_pool(deps: Deps) -> StdResult<PoolResponse> {
     let state = STATE.load(deps.storage)?;
     Ok(PoolResponse { amount1: state.amount1, amount2: state.amount2, token1: state.token1, token2: state.token2 })
     }
