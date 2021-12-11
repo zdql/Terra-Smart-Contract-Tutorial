@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Coin};
+use cosmwasm_std::{StdResult, Deps, DepsMut, Env, MessageInfo, Response, to_binary, Binary};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -20,19 +20,23 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    
+    let mut _token1 = msg.token1;
+    let mut _token2 = msg.token2;
+
     let state = State {
-        token1: coins(100, "token1"),
-        token2: coins(100, "token2"),
-        amount1: 50,
-        amount2: 50
+        token1: _token1,
+        token2: _token2,
+        amount1: msg.amount1,
+        amount2: msg.amount2,
     };
+
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     STATE.save(deps.storage, &state)?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
         .add_attribute("owner", info.sender)
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -43,57 +47,59 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::GetToken1for2 {} => GetToken1for2(deps),
-        ExecuteMsg::GetToken2for1 {} => GetToken2for1(deps),
+        ExecuteMsg::GetToken1for2 {token1} => Get_Token1for2(deps, token1),
+        ExecuteMsg::GetToken2for1 {token2} => Get_Token2for1(deps, token2),
     }
 }
 
-pub fn GetToken1for2(deps: DepsMut, amount: u32) -> Result<Response, ContractError> {
-    STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn Get_Token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
 
-        let mut exchangeRate = .2
-        let returnAmount = amount*exchangeRate
-
+        let exchangeRate = 1;
+        let poolAmount = amount;
+        let returnAmount = poolAmount * exchangeRate;
+        STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
         if returnAmount > state.amount2 {
-            return Err(ContractError::StdError);
+            return Err(ContractError::Unauthorized {})
         }  
-
         state.amount1 += amount;
         state.amount2 = state.amount2 - returnAmount;
-
-        Ok(Response::AssetResponse{ token: state.token2, amount: returnAmount })
+        Ok(state)
     })?;
 
-    Ok(Response::new().add_attribute("method", "try_increment"))
+    Ok(Response::new().add_attribute("method", "GetToken1for2"))
 }
 
-pub fn GetToken1for2(deps: DepsMut, amount: u32) -> Result<Response, ContractError> {
-    STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn Get_Token2for1(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
+        let exchangeRate = 1;
+        let poolAmount = amount;
+        let returnAmount = poolAmount * exchangeRate;
+        STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
+            if returnAmount > state.amount1 {
+                return Err(ContractError::Unauthorized {})
+            };
+            state.amount2 += amount;
+            state.amount1 = state.amount1 - returnAmount;
+            Ok(state)
+        })?;
+        Ok(Response::new().add_attribute("method", "GetToken2for1"))
+    }
 
-        let mut exchangeRate = 5
-        let returnAmount = amount*exchangeRate
-
-        if returnAmount > state.amount1 {
-            return Err(ContractError::StdError);
-        }  
-
-        state.amount2 += amount;
-        state.amount1 = state.amount1 - returnAmount;
-
-        Ok(Response::AssetResponse{ token: state.token1, amount: returnAmount })
-    })?;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetCount {} => to_binary(&query_count(deps)?),
+        QueryMsg::GetPool {} => to_binary(&getPool(deps)?),
     }
 }
 
-fn query_count(deps: Deps) -> StdResult<CountResponse> {
+ #[cfg_attr(not(feature = "library"), entry_point)]
+pub fn getPool(deps: Deps) -> StdResult<PoolResponse> {
     let state = STATE.load(deps.storage)?;
-    Ok(CountResponse { count: state.count })
-}
+    Ok(PoolResponse { amount1: state.amount1, amount2: state.amount2, token1: state.token1, token2: state.token2 })
+    }
+
 
 #[cfg(test)]
 mod tests {
@@ -105,7 +111,13 @@ mod tests {
     fn proper_initialization() {
         let mut deps = mock_dependencies(&[]);
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg { 
+            token1: "token1".to_string(),
+            token2: "token2".to_string(),
+            amount1: 50,
+            amount2: 50
+        };
+
         let info = mock_info("creator", &coins(1000, "earth"));
 
         // we can just call .unwrap() to assert this was a success
@@ -113,55 +125,67 @@ mod tests {
         assert_eq!(0, res.messages.len());
 
         // it worked, let's query the state
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(17, value.count);
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetPool{}).unwrap();
+        let value: PoolResponse = from_binary(&res).unwrap();
+        assert_eq!("token1", value.token1);
+        assert_eq!("token2", value.token2);
+        assert_eq!(50, value.amount1);
+        assert_eq!(50, value.amount2);
     }
 
     #[test]
-    fn increment() {
+    fn trade2for1 () {
         let mut deps = mock_dependencies(&coins(2, "token"));
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg { 
+            token1: "token1".to_string(),
+            token2: "token2".to_string(),
+            amount1: 50,
+            amount2: 50
+        };
+        
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
         // beneficiary can release it
         let info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Increment {};
+        let msg = ExecuteMsg::GetToken2for1 { token2: 1 };
         let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
-        // should increase counter by 1
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(18, value.count);
+        // should Increase token2 amount by 1, reduce token 1 amount by 1.
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetPool {}).unwrap();
+        let value: PoolResponse = from_binary(&res).unwrap();
+        assert_eq!("token1", value.token1);
+        assert_eq!("token2", value.token2);
+        assert_eq!(49, value.amount1);
+        assert_eq!(51, value.amount2);
     }
 
     #[test]
-    fn reset() {
+    fn trade1for2 () {
         let mut deps = mock_dependencies(&coins(2, "token"));
 
-        let msg = InstantiateMsg { count: 17 };
+        let msg = InstantiateMsg { 
+            token1: "token1".to_string(),
+            token2: "token2".to_string(),
+            amount1: 50,
+            amount2: 50
+        };
+        
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
         // beneficiary can release it
-        let unauth_info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
-        match res {
-            Err(ContractError::Unauthorized {}) => {}
-            _ => panic!("Must return unauthorized error"),
-        }
+        let info = mock_info("anyone", &coins(2, "token"));
+        let msg = ExecuteMsg::GetToken1for2 { token1: 1 };
+        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
-        // only the original creator can reset the counter
-        let auth_info = mock_info("creator", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
-
-        // should now be 5
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(5, value.count);
+        // should Increase token2 amount by 1, reduce token 1 amount by 1.
+        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetPool {}).unwrap();
+        let value: PoolResponse = from_binary(&res).unwrap();
+        assert_eq!("token1", value.token1);
+        assert_eq!("token2", value.token2);
+        assert_eq!(51, value.amount1);
+        assert_eq!(49, value.amount2);
     }
 }
