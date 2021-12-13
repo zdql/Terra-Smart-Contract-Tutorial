@@ -3,8 +3,8 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use rockpaperscissorsrust::msg::{PoolResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use rockpaperscissorsrust::state::State;
+use exchangepool::msg::{PoolResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use exchangepool::state::State;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
