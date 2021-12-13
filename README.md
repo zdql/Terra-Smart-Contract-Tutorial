@@ -1,41 +1,136 @@
-The implementation of the Automated Market Maker Prototype is as follows:
+# Writing a Smart Contract On Terra
 
-We create a smart contract that posseses, as it's state, a liquidity pool that allows
-for assets to be exchanged through it. It does this by having two functions:
+Terra is a powerful and revolutionary blockchain protocol that offers arguably the most sophisticated stablecoin system that exists today. It offers stable coins pegged at the price of the Dollar, Euro and Won, among others, hosted on it's own blockchain that allows for the construction of powerful decentralized applications.
 
-InsertLiquidity(token, amount):
-    this checks to make sure the sender has enough tokens, then deposits their tokens into the contract (or maybe wire to another wallet) for safe keeping. 
+Terra is able to keep prices accurate by using their miners as a Decentralized Oracle. Miners stake Terra's native token Luna, and provide price estimates for each stablecoin based on their observations of real world markets. They are rewarded in Luna if they provide price estimates that are within a distance from the polled median. In turn, inaccurate price submissions punish the miners. 
 
-    The person gets returned another token to represent the amount he inserted.
+The supply of Luna and Terra's stablecoins are regulated by the ability for users to burn one for the other. By doing this, the protocol maintains an elastic monetary system that regulates the supply of both assets. 
 
-WithdrawLiquidity(token, amount) send with payment of staked token:
-    This checks to make sure that the pool has enough tokens to be withdrawn and that the person has an equivalent amount of staked token
+Terra's innovative fiat-based stablecoins, in combination with it's use of Cosmos SDK make it an ideal protocol for constructing smart contracts and decentralized applications. In this article, we'll look at building a basic smart contract in Rust using CosmWasm. CosmWasm is a smart contract compiler powered by Cosmos, which we'll deploy to the Terra blockchain. 
 
-    the person gets returned his tokens from the pool.
+The contract, found in src, has 5 files in it. Each file has a specific purpose that tells the compiler how to define your contract in our case, but these can be redefined in lib.rs. In contract.rs, the main logic of the application is written. Error.rs defines the types of errors that can be returned by the contract. Msg.rs defines the messages that can be sent and received by the contract. Finally, state.rs defines the database that is stored natively in the contract.  
+
+Rust makes it easy to make highly customizable and efficient smart contracts. We'll dive into contract.rs, as the other files define structs that we'll reference in the core contract. 
+
+The purpose of our contract will be very straightforward. It maintains a pool of two "assets", which are really just two counters. The contract allows a user to increment one of the pools, which decreases the other, and vice versa. The contract aims to emulate a pool that can be swapped between, which is a popular and important architecture in Decentralized Finance. 
+
+We start with importing some crates, and defining the contract name and version as a constant. When installing Rust, you should also have installed Cargo, which is Rust's package manager. You'll notice these are defined in Cargo.toml under depencies. 
+
+```
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{StdResult, Deps, DepsMut, Env, MessageInfo, Response, to_binary, Binary};
+use cw2::set_contract_version;
+
+use crate::error::ContractError;
+use crate::msg::{PoolResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 
 
-The contract will need to store the coins, and also maintain them in a pool between the two supported assets. 
+use crate::state::{State, STATE};
 
-For the purposes of initial implementation, the contract will preform an exchange of 1 asset for another, at a 1 to 1 ratio, so long as there are enough tokens in the contract. 
+```
+
+There are three main functions that can be called in our smat contract, instantiate, execute, and query. You can see that each is marked with "entry point". Our first function is called instantiate. This is where we see how CosmWasm's standard contract objects are used. We see that we call instantiate with several arguments. 
+
+```
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn instantiate(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: InstantiateMsg,
+) -> Result<Response, ContractError> {
+    let mut _token1 = msg.token1;
+    let mut _token2 = msg.token2;
+
+    let state = State {
+        token1: _token1,
+        token2: _token2,
+        amount1: msg.amount1,
+        amount2: msg.amount2,
+    };
+
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    STATE.save(deps.storage, &state)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "instantiate")
+        .add_attribute("owner", info.sender)
+    )
+}
+```
+
+The first argument we pass is for deps. In CosmWasm, sending deps into a function allows the function to view the stored data in the contract, the database we declared in state.rs. If we want to be able to modify this data in our function, we pass DepsMut, or Deps' mutable version. This helps keep our contract safe from modifying our database when it should not be modified. 
+
+The second argument and third argument passed are _env, and info. _env is not very important for our contract, the _env contains inforation about the transaction that the message was sent in. Info contains MessageInfo, a struct that contains the sender of the message. For example, here info would contain the person who sent the InstanstiateMsg message in this example. 
+
+In msg, we pass in the actual message sent to the contract, so that we can use our user's provided information to instantiate their pool. 
+
+You'll notice that in CosmWasm, functions must declare return types and errors. Here, we define Response as the return type, and ContractError as the potential error. 
+
+The logic of instantiate() is straightforward. We declare a new state, and assign the contents of the instantiate message to the state. We then set the contract's version using the constants declared earlier in the contract, and save the current state to our deps.storage.
+
+We then define our Response, where we use CosmWasm's default Response object, and then add custom attributes as necessary. In the instantiate function, we can just return the owner of the contract, or whoever initially sent InstantiateMsg.
 
 
+Now, let's take a look at execute. Execute is where the contract's functions are declared that require DepsMut, which we mentioned earlier. Some functions in CosmWasm edit our state, and some are read-only. Execute() is where we define contracts that have the power to edit our state.
+
+```
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError> {
+    match msg {
+        ExecuteMsg::GetToken1for2 {token1} => get_token1for2(deps, token1),
+        ExecuteMsg::GetToken2for1 {token2} => get_token2for1(deps, token2),
+    }
+}
+```
+
+While most of the function header is similar to instantiate, we see that in our function body we use a match statement. In Rust, match is similar to a switch statement in Python - The function accepts a msg object, and Rust's compiler will make sure you have declared what should happen when each possible  type of message is sent. Here, we see that we simply link each message, and it's arguments, to the function in the contract that we want to be called. 
+
+```
+pub fn get_token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
+
+        let exchange_rate = 1;
+        let pool_amount = amount;
+        let return_amount = pool_amount * exchange_rate;
+        STATE.update(deps.storage, |mut state| -> Result<_, ContractError> {
+        if return_amount > state.amount2 {
+            return Err(ContractError::Unauthorized {})
+        }  
+        state.amount1 += amount;
+        state.amount2 = state.amount2 - return_amount;
+        Ok(state)
+    })?;
+
+    Ok(Response::new().add_attribute("method", "GetToken1for2"))
+}
+```
+
+In the actual logic for get_token1for2, we pass in the amount that we'd like to swap as amount. You can see that this is marked as an i32, this means a signed 32 bit integer. Rust allows you to be very granular about the amount of memory you reserve for different numbers, for example we could use i8, for 8 bits, or u32, for an unsigned 32 bit integer.This is a very powerful feature when writing complex and efficient programs. For now, we will use i32.  
+
+The most important part of this function call is STATE.update, where we pass in our state declared as a mutable object, modify amount1 and amount2, and then save it. Rust uses Ok() as the signal to end this function's execution. You can see that the return type of STATE.update is _, Rust uses _ as a "catchall", meaning the return type can be anything. If we aim to return more than is left in the pool for asset 2, we will throw an Unauthorized error.  
+
+Finally, in get_token1for2, we send a response with Ok() and add an atribute indicating that this was the function that was called. 
+
+The logic for get_token2for1 is almost identical. 
+
+Our final entry-point function is query, which you'll notice only requires Deps, and not DepsMut. This is as it is read-only, and is only getting the current state, not modifying it. We once again have a match statement, telling our contract what to do with each type of read-only message. There is only one in our contract, QueryMsg, and we call get_pool with this message. We encode the response from get_pool into binary so that the information can be sent in a message. 
 
 
-The pricing of the pool will work as follows, the pool will need two tokens deposited into the pool to work properly. Luna and UST will work fine.
+```
+pub fn get_pool(deps: Deps) -> StdResult<PoolResponse> {
+    let state = STATE.load(deps.storage)?;
+    Ok(PoolResponse { amount1: state.amount1, amount2: state.amount2, token1: state.token1, token2: state.token2 })
+    }
+```
 
-We define the total amount of asset 1 x and asset 2 y respectively. 
+The logic for get_pool loads the current state, and then responds with one of our predefined PoolResponses, which is a type of Response. You can see that we use StdResult and do not declare an error type, StdResult can be used if a custom error does not need to be specified. 
 
-The price needs to be held in check somehow, we can't use an outside oracle. 
- > https://ieeexplore.ieee.org/document/9461100
+The rest of the contract has testing functions to make sure everything is working properly. Rust has powerful testing libraries and allows them to seamlessly integrate into program logic. The tests are straightforward, they ensure that our functions work properly by instantiating and sending them messages. Testing smart contracts in this manner offers the ability to very easily develop and iterate with the confidence that you are not breaking your contract's logic - That is, if the tests are written properly. We won't go over the written tests in this article, but you should always test your CosmWasm contracts thoroughly before deploying. 
 
- When a user requests to swap asset y for x: it calls a check price function
-
- this check price function takes (amount of asset y):
-
- and returns the amount of x you would recieve from that amount of y.
-
- This is strictly based on the ratio from one to the other in the pool.
-
- The price is equal to y = 1/x, so that the two assets remain at an equilibrium yx = c. so if you trade x tokens, you recieve 1/y tokens, where y is the total amount of y tokens. 
-
-dfngaq  
+Now, with our contract written, it is time to compile and deploy the contract to our localTerra environment. 

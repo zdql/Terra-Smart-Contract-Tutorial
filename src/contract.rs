@@ -52,7 +52,6 @@ pub fn execute(
     }
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn get_token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
 
         let exchange_rate = 1;
@@ -70,7 +69,6 @@ pub fn get_token1for2(deps: DepsMut, amount: i32) -> Result<Response, ContractEr
     Ok(Response::new().add_attribute("method", "GetToken1for2"))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn get_token2for1(deps: DepsMut, amount: i32) -> Result<Response, ContractError> {
         let exchange_rate = 1;
         let pool_amount = amount;
@@ -94,7 +92,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
- #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn get_pool(deps: Deps) -> StdResult<PoolResponse> {
     let state = STATE.load(deps.storage)?;
     Ok(PoolResponse { amount1: state.amount1, amount2: state.amount2, token1: state.token1, token2: state.token2 })
