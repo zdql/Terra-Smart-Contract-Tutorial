@@ -1,8 +1,8 @@
 [package]
-name = "rockpaperscissorsrust"
+name = "exchangepool"
 version = "0.1.0"
 authors = ["BenReilly19 <84412547+BenReilly19@users.noreply.github.com>"]
-edition = "2018"
+edition = "2021"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.

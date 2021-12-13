@@ -281,6 +281,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "exchangepool"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std 1.0.0-beta",
+ "cosmwasm-storage",
+ "cw-storage-plus",
+ "cw2",
+ "cw20",
+ "schemars 0.8.3",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "ff"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -423,21 +438,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom 0.2.3",
-]
-
-[[package]]
-name = "rockpaperscissorsrust"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std 1.0.0-beta",
- "cosmwasm-storage",
- "cw-storage-plus",
- "cw2",
- "cw20",
- "schemars 0.8.3",
- "serde",
- "thiserror",
 ]
 
 [[package]]
