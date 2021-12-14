@@ -8,6 +8,8 @@ The supply of Luna and Terra's stablecoins are regulated by the ability for user
 
 Terra's innovative fiat-based stablecoins, in combination with it's use of Cosmos SDK make it an ideal protocol for constructing smart contracts and decentralized applications. In this article, we'll look at building a basic smart contract in Rust using CosmWasm. CosmWasm is a smart contract compiler powered by Cosmos, which we'll deploy to the Terra blockchain. 
 
+To follow this tutorial you will need rust installed, and some programming knowledge and general understanding of smart contracts will be helpful.
+
 The contract, found in src, has 5 files in it. Each file has a specific purpose that tells the compiler how to define your contract in our case, but these can be redefined in lib.rs. In contract.rs, the main logic of the application is written. Error.rs defines the types of errors that can be returned by the contract. Msg.rs defines the messages that can be sent and received by the contract. Finally, state.rs defines the database that is stored natively in the contract.  
 
 Rust makes it easy to make highly customizable and efficient smart contracts. We'll dive into contract.rs, as the other files define structs that we'll reference in the core contract. 
@@ -200,3 +202,23 @@ async function Deploy() {
       return pool;
     }
 ```
+
+First, we store our compiled contract on localterra using StoreCode. We then instantiate the contract code with our instantiation message, and get the address that is returned by the instantiation. This address is where our smart contract is deployed, and we'll use this in the later functions to send it messages and query it. In sendtransaction, we send get_token2for1, which calls the function on our smart contract. Finally, we can get our updated pools by calling terra.wasm.contractQuery using get_pool, submitted as a JSON object.
+
+We have successfully built, compiled, and deployed our smart contract on our localTerra blockchain! CosmWasm contracts offer highly customizable and easy to produce smart contracts, and have potential to be the basis for the next generation of DeFi. For further reading on this topic, and for the resources that we used to design this contract and script, please see below. 
+
+
+LocalTerra
+https://github.com/terra-money/localterra
+
+CosmWasm Smart contract Template
+https://github.com/InterWasm/cw-template
+
+CosmWasm Plus
+https://github.com/CosmWasm/cw-plus
+
+Deploying a Terra Smart Contract with TypeScript by Larry0x
+https://github.com/larry0x/spacecamp-2021-workshop
+
+Terra Academy
+https://academy.terra.money/collections
