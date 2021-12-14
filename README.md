@@ -134,3 +134,28 @@ The logic for get_pool loads the current state, and then responds with one of ou
 The rest of the contract has testing functions to make sure everything is working properly. Rust has powerful testing libraries and allows them to seamlessly integrate into program logic. The tests are straightforward, they ensure that our functions work properly by instantiating and sending them messages. Testing smart contracts in this manner offers the ability to very easily develop and iterate with the confidence that you are not breaking your contract's logic - That is, if the tests are written properly. We won't go over the written tests in this article, but you should always test your CosmWasm contracts thoroughly before deploying. 
 
 Now, with our contract written, it is time to compile and deploy the contract to our localTerra environment. 
+
+To compile our contract, we will need to set up our environment properly by installing LocalTerra and Terra Core. This article from Terra's docs detail these steps accurately. https://docs.terra.money/Tutorials/Smart-contracts/Set-up-local-environment.html#install-terra-core-locally
+
+To compile our contract, we will use the command:
+
+```
+cargo wasm
+```
+We'll need to further optimize the contract to make the binary as small as possible. To do this, we call either:
+
+```
+cargo run-script optimize
+```
+
+Or this larger code block, if you are on an Arm64 machine. 
+
+``` 
+docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/rust-optimizer-arm64:0.12.4
+  ```
+
+
+To deploy our contract to LocalTerra, we'll need to spin up our localterra environment, upload our compiled contract, 

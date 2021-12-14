@@ -1,0 +1,1 @@
+9b379e749699f4b300daf5059ff14490aede66e78b5bccd9c588e0fd5e6cfcf1  ./target/wasm32-unknown-unknown/release/exchangepool.wasm
