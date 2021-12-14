@@ -168,7 +168,7 @@ docker-compose up
 
 Once localterra is running, you should be able to run the script provided in scripts/index.js to deploy our compiled contract. We call several helper functions which you should explore, these take care of calling Terra.js's functions for contract upload, and sending our instantiation, execution and query messages. For our tutorial, we'll explain the main function, Deploy().
 
-Important: If you optimized the contract using cargo run-script optimize, then you must change the path from exchangepool-aarch64.wasm to exchangepool.wasm
+Important: If you optimized the contract using cargo run-script optimize, then you must change the path from exchangepool-aarch64.wasm to exchangepool.wasm.
 exchangepool-aarch64.wasm is generated if you are using an Arm64 machine, and exchanglepool.wasm is generated otherwise.
 
 ```
