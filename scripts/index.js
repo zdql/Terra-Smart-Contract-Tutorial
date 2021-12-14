@@ -12,49 +12,9 @@ import {
 } from "@terra-money/terra.js";
 
 
-
 const terra = new LocalTerra();
 const deployer = terra.wallets.test1;
 let result;
-
-
-async function Deploy() {
-    
-    const cw20CodeId = await storeCode(
-        terra,
-        deployer,
-        path.resolve(__dirname, "../artifacts/exchangepool-aarch64.wasm.wasm")
-      );
-
-      console.log(chalk.green("Done!"), `${chalk.blue("codeId")}=${cw20CodeId}`);
-
-      const deploy = await instantiateContract(terra, deployer, deployer, cw20CodeId, {
-        token1: "token1",
-        token2: "token2",
-        amount1: 50,
-        amount2: 50
-      });
-      console.log("deploy", deploy);
-
-      const getToken1for2Test = await sendTransaction(terra, deployer, [
-        new MsgExecuteContract(deployer.key.accAddress, result, {
-          GetToken1for2: {
-            token1: 1,
-          },
-        }),
-      ]);
-
-      console.log(chalk.green("Got token 1 for 2!"), `${chalk.blue("result")}=${getToken1for2Test}`);
-
-    }
-
-Deploy();
-
-
-function toEncodedBinary() {
-    return Buffer.from(JSON.stringify(obj)).toString("base64");
-  }
-
 
 async function instantiateContract(
     terra,
@@ -74,6 +34,8 @@ async function instantiateContract(
     return result;
   }
 
+
+
 async function sendTransaction(
     terra,
     sender,
@@ -86,9 +48,7 @@ async function sendTransaction(
     });
   
     const result = await terra.tx.broadcast(tx);
-  
-    // Print the log info
-    if (verbose) {
+      if (verbose) {
       console.log(chalk.magenta("\nTxHash:"), result.txhash);
       try {
         console.log(
@@ -124,3 +84,40 @@ async function sendTransaction(
     ]);
     return parseInt(result.logs[0].eventsByType.store_code.code_id[0]);
   }
+
+
+
+
+async function Deploy() {
+    
+    const cw20CodeId = await storeCode(
+        terra,
+        deployer,
+        path.resolve("../artifacts/exchangepool-aarch64.wasm")
+      );
+
+      console.log(cw20CodeId);
+
+      const instance = await instantiateContract(terra, deployer, deployer, cw20CodeId, {
+        token1: "token1",
+        token2: "token2",
+        amount1: 50,
+        amount2: 50
+      });
+
+      const address = JSON.parse(instance.raw_log)[0].events[1].attributes[3].value;
+
+
+      await sendTransaction(terra, deployer, [
+        new MsgExecuteContract(deployer.key.accAddress, address, {
+            get_token1for2: {
+            token1: 1,
+          },
+        }),
+      ]);
+
+    }
+
+Deploy();
+
+
