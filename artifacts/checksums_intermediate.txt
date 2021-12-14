@@ -1,1 +1,1 @@
-9b379e749699f4b300daf5059ff14490aede66e78b5bccd9c588e0fd5e6cfcf1  ./target/wasm32-unknown-unknown/release/exchangepool.wasm
+e62c4556d6777e784f438d555807118770ebdaf37e07de72f593512a9ceaebd2  ./target/wasm32-unknown-unknown/release/exchangepool.wasm
