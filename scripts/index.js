@@ -85,7 +85,6 @@ async function Deploy() {
         path.resolve("../artifacts/exchangepool-aarch64.wasm")
       );
 
-      console.log(cw20CodeId);
 
       const instance = await instantiateContract(terra, deployer, deployer, cw20CodeId, {
         token1: "token1",
