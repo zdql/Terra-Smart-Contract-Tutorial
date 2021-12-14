@@ -107,7 +107,7 @@ async function Deploy() {
 
       const pool = await terra.wasm.contractQuery(address, {"get_pool":{}})
 
-      return pool;
+      console.log( pool)
     }
 
 
