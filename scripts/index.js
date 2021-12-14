@@ -10,6 +10,7 @@ import {
   MsgExecuteContract,
   Fee
 } from "@terra-money/terra.js";
+import { assert } from "console";
 
 
 const terra = new LocalTerra();
@@ -35,7 +36,6 @@ async function instantiateContract(
   }
 
 
-
 async function sendTransaction(
     terra,
     sender,
@@ -48,18 +48,7 @@ async function sendTransaction(
     });
   
     const result = await terra.tx.broadcast(tx);
-      if (verbose) {
-      console.log(chalk.magenta("\nTxHash:"), result.txhash);
-      try {
-        console.log(
-          chalk.magenta("Raw log:"),
-          JSON.stringify(JSON.parse(result.raw_log), null, 2)
-        );
-      } catch {
-        console.log(chalk.magenta("Failed to parse log! Raw log:"), result.raw_log);
-      }
-    }
-  
+ 
     if (isTxError(result)) {
       throw new Error(
         chalk.red("Transaction failed!") +
@@ -116,7 +105,12 @@ async function Deploy() {
         }),
       ]);
 
+      const pool = await terra.wasm.contractQuery(address, {"get_pool":{}})
+
+      return pool;
     }
+
+
 
 Deploy();
 

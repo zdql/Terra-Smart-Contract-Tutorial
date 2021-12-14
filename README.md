@@ -135,7 +135,7 @@ The rest of the contract has testing functions to make sure everything is workin
 
 Now, with our contract written, it is time to compile and deploy the contract to our localTerra environment. 
 
-To compile our contract, we will need to set up our environment properly by installing LocalTerra and Terra Core. This article from Terra's docs detail these steps accurately. https://docs.terra.money/Tutorials/Smart-contracts/Set-up-local-environment.html#install-terra-core-locally
+To compile our contract, we will need to set up our environment properly by installing LocalTerra and Terra Core. This article from Terra's docs detail these steps carefully. https://docs.terra.money/Tutorials/Smart-contracts/Set-up-local-environment.html#install-terra-core-locally
 
 To compile our contract, we will use the command:
 
@@ -158,4 +158,45 @@ docker run --rm -v "$(pwd)":/code \
   ```
 
 
-To deploy our contract to LocalTerra, we'll need to spin up our localterra environment, upload our compiled contract, 
+To deploy our contract to LocalTerra, we'll need to spin up our localterra environment. To do this, make sure you have localterra installed and call the following:
+
+```
+docker-compose up
+```
+
+Once localterra is running, you should be able to run the script provided in scripts/index.js to deploy our compiled contract. We call several helper functions which you should explore, these take care of calling Terra.js's functions for contract upload, and sending our instantiation, execution and query messages. For our tutorial, we'll explain the main function, Deploy().
+
+```
+async function Deploy() {
+    
+    const cw20CodeId = await storeCode(
+        terra,
+        deployer,
+        path.resolve("../artifacts/exchangepool-aarch64.wasm")
+      );
+
+      console.log(cw20CodeId);
+
+      const instance = await instantiateContract(terra, deployer, deployer, cw20CodeId, {
+        token1: "token1",
+        token2: "token2",
+        amount1: 50,
+        amount2: 50
+      });
+
+      const address = JSON.parse(instance.raw_log)[0].events[1].attributes[3].value;
+
+
+      await sendTransaction(terra, deployer, [
+        new MsgExecuteContract(deployer.key.accAddress, address, {
+            get_token1for2: {
+            token1: 1,
+          },
+        }),
+      ]);
+
+      const pool = await terra.wasm.contractQuery(address, {"get_pool":{}})
+
+      return pool;
+    }
+```
